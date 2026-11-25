@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090909">
+<title>F1coin — Racing Game</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090909;color:#fff;font-family:Arial,sans-serif;background-image:radial-gradient(ellipse at 50% 0%,#492000 0%,#090909 65%);min-height:100vh}
+header{padding:18px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #513000}
+.logo{font-size:28px;font-weight:900;font-style:italic}.logo span{color:#ff2929}
+main{max-width:750px;margin:auto;padding:20px 18px 105px}
+.hero{border:1px solid #a76b13;border-radius:22px;padding:24px 18px;background:linear-gradient(130deg,#321500,#111 65%);text-align:center;box-shadow:0 0 25px #ff9d2022}
+h1{font-size:36px;margin:8px 0}.gold{color:#ffc247}
+.balance{margin:18px 0;padding:20px;border-radius:18px;background:#17130d;border:1px solid #956019;text-align:center}
+.amount{font-size:36px;font-weight:900;color:#ffbf42}
+button{border:0;border-radius:12px;padding:14px 18px;font-size:14px;font-weight:900;cursor:pointer;background:linear-gradient(100deg,#ffb52b,#ffdf76);color:#17100a}
+button:active{transform:scale(.97)}button:disabled{opacity:.55;cursor:default}
+.menu{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px}
+.card{padding:18px 12px;background:#171717;border:1px solid #553817;border-radius:16px;text-align:center;cursor:pointer}
+.card b{display:block;margin-top:8px}.card:hover{border-color:#ffbd43}
+.panel{margin-top:18px;background:#151515;border:1px solid #493015;border-radius:18px;padding:18px}
+.task{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 0;border-bottom:1px solid #333}
+.task:last-child{border:0}.small{color:#aaa;font-size:13px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#101010;display:flex;justify-content:space-around;padding:10px 4px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #513000;z-index:5}
+nav button{background:none;color:white;padding:7px 5px;font-size:12px;min-width:55px}
+nav button.active{color:#ffc247}
+.page{display:none}.page.active{display:block}
+footer{text-align:center;color:#777;padding:22px;font-size:12px}
+.tap{width:190px;height:190px;border-radius:50%;font-size:48px;display:block;margin:22px auto;background:radial-gradient(circle at 35% 30%,#ffe7a1,#ffb52b 55%,#a84b00);box-shadow:0 0 35px #ff9d2055;border:5px solid #7c430c}
+.tap:active{transform:scale(.94)}
+.statrow{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #333}
+.notice{font-size:12px;color:#c8a66d;line-height:1.5}
+</style>
+</head>
+<body>
+<header><div class="logo"><span>F1</span>coin 🏁</div><div class="small" id="username">Гонщик</div></header>
+<main>
+<section id="home" class="page active">
+ <div class="hero"><div style="font-size:55px">🏎️</div><h1><span class="gold">F1</span>coin</h1><h3>ИГРАЙ. СОБИРАЙ. ПОБЕЖДАЙ.</h3><p class="small">Твоя гонка начинается прямо сейчас!</p><button onclick="showPage('game')">НАЧАТЬ ИГРУ →</button></div>
+ <div class="balance"><div class="small">ТВОЙ БАЛАНС</div><div class="amount"><span id="balance">0</span> 🪙</div><div class="small">F1coin</div></div>
+ <div class="menu">
+  <div class="card" onclick="showPage('bonus')">🎁<b>Бонусы</b></div><div class="card" onclick="showPage('tasks')">🎯<b>Задания</b></div>
+  <div class="card" onclick="showPage('rating')">🏆<b>Рейтинг</b></div><div class="card" onclick="showPage('profile')">👤<b>Профиль</b></div>
+ </div>
+</section>
+<section id="game" class="page">
+ <h2>🏎️ Игровой центр</h2><div class="panel" style="text-align:center">
+ <h3>Нажимай и зарабатывай!</h3><p class="small">Каждое нажатие приносит 1 F1coin</p>
+ <button class="tap" onclick="earnCoin()" aria-label="Заработать F1coin">🏎️</button>
+ <div class="gold" style="font-weight:900;font-size:20px">+1 F1coin за нажатие</div>
+ <p class="small" id="tapMessage">Выходи на трассу и собирай монеты!</p></div>
+ <div class="panel"><h3>Твой прогресс</h3><div class="statrow"><span>Всего заработано</span><b id="earned">0</b></div><div class="statrow"><span>Нажатий</span><b id="taps">0</b></div></div>
+</section>
+<section id="bonus" class="page"><h2>🎁 Ежедневный бонус</h2><div class="panel" style="text-align:center"><div style="font-size:65px">🪙</div><h2 class="gold">500 F1coin</h2><p class="small">Ежедневная награда за активность</p><button id="bonusBtn" onclick="claimBonus()">ЗАБРАТЬ БОНУС</button><p class="small" id="bonusStatus"></p></div></section>
+<section id="tasks" class="page"><h2>🎯 Задания</h2><div class="panel">
+ <div class="task"><div>🏁 <b>Сделай 10 нажатий</b><div class="small">Награда: 100 F1coin</div></div><button id="task1" onclick="claimTask('task1',100,10)">ЗАБРАТЬ</button></div>
+ <div class="task"><div>🚀 <b>Сделай 50 нажатий</b><div class="small">Награда: 250 F1coin</div></div><button id="task2" onclick="claimTask('task2',250,50)">ЗАБРАТЬ</button></div>
+ <div class="task"><div>🏆 <b>Сделай 100 нажатий</b><div class="small">Награда: 500 F1coin</div></div><button id="task3" onclick="claimTask('task3',500,100)">ЗАБРАТЬ</button></div>
+ </div></section>
+<section id="rating" class="page"><h2>🏆 Рейтинг гонщиков</h2><div class="panel"><p class="small">Пока это локальный демо-рейтинг. Общий рейтинг появится после подключения сервера.</p><div class="task">🥇 F1 Master <b>— 25 000</b></div><div class="task">🥈 Speed King <b>— 18 500</b></div><div class="task">🥉 Turbo Racer <b>— 12 000</b></div></div></section>
+<section id="profile" class="page"><h2>👤 Мой профиль</h2><div class="panel"><h3 id="profileName">Гонщик</h3><p>Баланс: <b class="gold"><span id="profileBalance">0</span> F1coin</b></p><div class="statrow"><span>Всего заработано</span><b id="profileEarned">0</b></div><div class="statrow"><span>Telegram ID</span><b id="telegramId">—</b></div></div></section>
+<p class="notice">Демо-версия: прогресс хранится в браузере на этом устройстве. Для реальных игровых балансов, защиты от накрутки и общего рейтинга нужен сервер.</p>
+</main>
+<nav>
+ <button class="active" onclick="showPage('home',this)">🏠<br>Главная</button><button onclick="showPage('game',this)">🏎️<br>Игра</button><button onclick="showPage('bonus',this)">🎁<br>Бонус</button><button onclick="showPage('tasks',this)">🎯<br>Задания</button><button onclick="showPage('profile',this)">👤<br>Профиль</button>
+</nav>
+<footer>F1coin © 2026 · ТВОЯ ГОНКА. ТВОИ ПРАВИЛА.</footer>
+<script>
+const tg=window.Telegram?.WebApp;
+tg?.ready(); tg?.expand();
+const user=tg?.initDataUnsafe?.user;
+const storageKey='f1coin_demo_v1_'+(user?.id||'guest');
+const defaults={balance:0,earned:0,taps:0,lastBonus:'',tasks:{}};
+let state;
+try{state={...defaults,...JSON.parse(localStorage.getItem(storageKey)||'{}')};}catch(e){state={...defaults};}
+function save(){try{localStorage.setItem(storageKey,JSON.stringify(state));}catch(e){}}
+function fmt(n){return Number(n||0).toLocaleString('ru-RU');}
+function update(){
+ document.getElementById('balance').textContent=fmt(state.balance);
+ document.getElementById('profileBalance').textContent=fmt(state.balance);
+ document.getElementById('earned').textContent=fmt(state.earned);
+ document.getElementById('profileEarned').textContent=fmt(state.earned);
+ document.getElementById('taps').textContent=fmt(state.taps);
+ const today=new Date().toLocaleDateString('en-CA');
+ const claimed=state.lastBonus===today;
+ document.getElementById('bonusBtn').disabled=claimed;
+ document.getElementById('bonusBtn').textContent=claimed?'УЖЕ ПОЛУЧЕНО ✓':'ЗАБРАТЬ БОНУС';
+ document.getElementById('bonusStatus').textContent=claimed?'Возвращайся завтра за новой наградой!':'Бонус доступен сегодня.';
+ [['task1',10],['task2',50],['task3',100]].forEach(([id,goal])=>{
+  const b=document.getElementById(id); const done=!!state.tasks[id];
+  b.disabled=done||state.taps<goal;b.textContent=done?'ГОТОВО ✓':state.taps<goal?'ЕЩЁ '+(goal-state.taps):'ЗАБРАТЬ';
+ });
+}
+function showPage(id,btn){
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+ document.getElementById(id)?.classList.add('active');
+ document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+ if(btn)btn.classList.add('active');
+}
+function earnCoin(){state.balance++;state.earned++;state.taps++;save();update();document.getElementById('tapMessage').textContent='Отлично! Ещё одна монета в копилке 🪙';}
+function claimBonus(){
+ const today=new Date().toLocaleDateString('en-CA');
+ if(state.lastBonus===today)return;
+ state.balance+=500;state.earned+=500;state.lastBonus=today;save();update();
+}
+function claimTask(id,reward,goal){
+ if(state.tasks[id]||state.taps<goal)return;
+ state.balance+=reward;state.earned+=reward;state.tasks[id]=true;save();update();
+}
+if(user){
+ const name=user.first_name||'Гонщик';
+ document.getElementById('username').textContent=name;
+ document.getElementById('profileName').textContent=name;
+ document.getElementById('telegramId').textContent=String(user.id);
+}
+update();
+</script>
+</body></html>
